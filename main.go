@@ -31,7 +31,7 @@ func scan(path string, group *sync.WaitGroup, quite bool) {
 
 func main() {
 	path := "./"
-	if len(os.Args) < 2 {
+	if len(os.Args) > 1 {
 		path = os.Args[1]
 	}
 

@@ -11,10 +11,20 @@ import (
 
 var counter uint64
 
+func readDir(name string) ([]os.DirEntry, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
+	dirs, err := f.ReadDir(-1)
+	return dirs, err
+}
+
 func scan(path string, group *sync.WaitGroup, quite bool) {
 	dirs, err := os.ReadDir(path)
 	if err != nil {
-		panic(err)
+		//color.Red("err:%s", err.Error())
 	}
 
 	for _, d := range dirs {

@@ -30,9 +30,9 @@ func scan(path string, group *sync.WaitGroup, quite bool) {
 }
 
 func main() {
+	path := "./"
 	if len(os.Args) < 2 {
-		fmt.Println("provide path")
-		return
+		path = os.Args[1]
 	}
 
 	quite := true
@@ -40,7 +40,6 @@ func main() {
 		quite = false
 	}
 
-	path := os.Args[1]
 	absPath, _ := filepath.Abs(path)
 	now := time.Now()
 	wg := sync.WaitGroup{}

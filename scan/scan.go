@@ -1,57 +1,59 @@
-package main
+package scan
 
 import (
 	"fmt"
+	_ "github.com/spf13/cobra"
+	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-func scan(path string, queue chan string, wg *sync.WaitGroup) {
-	fmt.Printf("job started for：%s\n", path)
-	wg2 := sync.WaitGroup{}
-	if path != "fuck" {
-		for _, d := range []string{"1", "2", "3", "4", "fuck"} {
-			wg2.Add(1)
-			go func(text string) {
-				time.Sleep(time.Second * 5)
-				queue <- text
-				wg2.Done()
-			}(d)
+type Scanner struct {
+	success     uint64
+	failed      uint64
+	elapsed     time.Duration
+	Callback    func(entry os.DirEntry)
+	PrettyPrint func(success uint64, failed uint64, elapse time.Duration)
+}
+
+func (scanner *Scanner) scan(path string, group *sync.WaitGroup, quite bool) {
+	dirs, err := os.ReadDir(path)
+	if err != nil {
+		atomic.AddUint64(&scanner.failed, 1)
+	}
+
+	wg := sync.WaitGroup{}
+	for _, d := range dirs {
+		wg.Add(1)
+		go func() {
+			if scanner.Callback != nil {
+				scanner.Callback(d)
+			}
+			wg.Done()
+		}()
+		newPath := path + "/" + d.Name()
+		if d.IsDir() {
+			group.Add(1)
+			go scanner.scan(newPath, group, quite)
+		} else {
+			atomic.AddUint64(&scanner.success, 1)
+			if !quite {
+				fmt.Println(newPath)
+			}
 		}
 	}
-
-	fmt.Println("job ended")
-	wg2.Wait()
-	wg.Done()
-}
-
-func worker(queue chan string, wg *sync.WaitGroup) {
-	fmt.Println("worker started")
-
-	wg2 := sync.WaitGroup{}
-	for e := range queue {
-		wg2.Add(1)
-		go scan(e, queue, wg)
-	}
-	fmt.Println("worker ended")
-	wg2.Wait()
-	wg.Done()
-}
-
-func dispatch(path string) {
-	fmt.Println("")
-	queue := make(chan string, 2)
-	wg := sync.WaitGroup{}
-
-	wg.Add(1)
-	go scan(path, queue, &wg)
-
-	wg.Add(1)
-	go worker(queue, &wg)
-
 	wg.Wait()
+	group.Done()
 }
 
-func main() {
-	dispatch("./starter")
+func (scanner *Scanner) Scan(path string, quite bool) {
+	start := time.Now()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go scanner.scan(path, &wg, quite)
+	wg.Wait()
+	if scanner.PrettyPrint != nil {
+		scanner.PrettyPrint(scanner.success, scanner.failed, time.Since(start))
+	}
 }

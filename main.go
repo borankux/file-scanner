@@ -12,7 +12,11 @@ import (
 var counter uint64
 
 func scan(path string, group *sync.WaitGroup, quite bool) {
-	dirs, _ := os.ReadDir(path)
+	dirs, err := os.ReadDir(path)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, d := range dirs {
 		newPath := path + "/" + d.Name()
 		if d.IsDir() {

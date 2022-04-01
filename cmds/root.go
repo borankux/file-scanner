@@ -6,8 +6,7 @@ import (
 )
 
 var rootCommand = cobra.Command{
-	Short: "scan command",
-	Long:  "cobra commander",
+	Short: "scans current directory or anywhere you want",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Usage()
 	},

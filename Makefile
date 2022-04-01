@@ -5,4 +5,6 @@ linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./dist/buttler_linux
 
 darwin:
-	go build
+	go build -o ./dist/buttler
+
+build: darwin linux

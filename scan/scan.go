@@ -6,6 +6,7 @@ import (
 	_ "github.com/spf13/cobra"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,20 +33,27 @@ func (scanner *Scanner) getElapsed() time.Duration {
 }
 
 func (scanner *Scanner) scan(path string, group *sync.WaitGroup, quite bool) {
+	defer group.Done()
 	dirs, err := os.ReadDir(path)
 	if err != nil {
 		atomic.AddUint64(&scanner.failed, 1)
+		e := strings.Split(err.Error(), ":")[1]
+		if e != " too many open files" {
+			fmt.Println(color.RedString("[%s]", e))
+		}
+		return
 	}
 
 	wg := sync.WaitGroup{}
+	defer wg.Wait()
 	for _, d := range dirs {
 		wg.Add(1)
-		go func() {
+		go func(waitGroup *sync.WaitGroup) {
 			if scanner.Callback != nil {
 				scanner.Callback(d)
 			}
-			wg.Done()
-		}()
+			waitGroup.Done()
+		}(&wg)
 		newPath := path + "/" + d.Name()
 		if d.IsDir() {
 			group.Add(1)
@@ -58,7 +66,6 @@ func (scanner *Scanner) scan(path string, group *sync.WaitGroup, quite bool) {
 		}
 	}
 	wg.Wait()
-	group.Done()
 }
 
 func (scanner *Scanner) Scan(path string, quite bool) {

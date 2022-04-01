@@ -1,5 +1,5 @@
-./data/
+data
 ./buttler_linux
 ./buttler
 .idea
-./dist
+dist

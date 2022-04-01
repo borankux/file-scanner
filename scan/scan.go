@@ -5,6 +5,7 @@ import (
 	"github.com/fatih/color"
 	_ "github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,7 +17,8 @@ type Scanner struct {
 	startTime time.Time
 	success   uint64
 	failed    uint64
-	Callback  func(entry os.DirEntry)
+	dirs      uint64
+	Callback  func(fullpath string, entry os.DirEntry)
 }
 
 func (scanner *Scanner) prettyPrint() {
@@ -47,14 +49,16 @@ func (scanner *Scanner) scan(path string, group *sync.WaitGroup, quite bool) {
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
 	for _, d := range dirs {
+		atomic.AddUint64(&scanner.dirs, 1)
 		wg.Add(1)
+		newPath := path + "/" + d.Name()
+		absPath, _ := filepath.Abs(newPath)
 		go func(waitGroup *sync.WaitGroup) {
 			if scanner.Callback != nil {
-				scanner.Callback(d)
+				scanner.Callback(absPath, d)
 			}
 			waitGroup.Done()
 		}(&wg)
-		newPath := path + "/" + d.Name()
 		if d.IsDir() {
 			group.Add(1)
 			go scanner.scan(newPath, group, quite)

@@ -5,6 +5,7 @@ import (
 	"buttler/scan"
 	"fmt"
 	"github.com/spf13/cobra"
+	"os"
 	"path/filepath"
 )
 
@@ -21,7 +22,12 @@ var scanCommand = &cobra.Command{
 			p = args[0]
 		}
 		fp, _ := filepath.Abs(p)
-		s := scan.Scanner{}
+		s := scan.Scanner{
+			Callback: func(fullpath string, entry os.DirEntry) {
+				info, _ := entry.Info()
+				database.SaveFile(fullpath, info.Size())
+			},
+		}
 		s.Scan(fp, true)
 	},
 }

@@ -77,6 +77,13 @@ func (scanner *Scanner) Scan(path string, quite bool) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go scanner.scan(path, &wg, quite)
+
+	go func() {
+		for {
+			time.Sleep(time.Millisecond * 200)
+			scanner.prettyPrint()
+		}
+	}()
 	wg.Wait()
 	scanner.prettyPrint()
 }
